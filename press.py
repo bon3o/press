@@ -29,8 +29,8 @@ GPIO.setup(6, GPIO.IN, pull_up_down=GPIO.PUD_UP)	#ДАТЧИК ЗАС СНАРУ
 GPIO.setup(5, GPIO.IN, pull_up_down=GPIO.PUD_UP)	#РЕЗЕРВ							29
 GPIO.setup(12, GPIO.IN, pull_up_down=GPIO.PUD_UP)	#КНОПКА СТОП					32
 
-po = GPIO.output
-pi = GPIO.input
+pinOut = GPIO.output
+pinIn = GPIO.input
 
 ### ВЫХОДЫ
 # ГИДРАВЛИКА
@@ -48,96 +48,96 @@ lamp = 13
 buzz = 16
 
 ### ВХОДЫ
-pol_up = 2
-pol_slow = 9
-pol_dn = 8
-tol_up = 15
-tol_dn = 3
-zas_out = 6
-zas_in = 7
-start_btn = 14
-stop_btn = 12
+polUp = 2
+polSlow = 9
+polDn = 8
+tolUp = 15
+tolDn = 3
+zasOut = 6
+zasIn = 7
+startBtn = 14
+stopBtn = 12
 
 def initial_signal():
     for i in range (1, 10):
-        po(16, 1)
+        pinOut(buzz, 1)
 	     time.sleep(0.1)
-        po(16, 0)
+        pinOut(buzz, 0)
 	     time.sleep(0.5)
 	 time.sleep(5)
 	 print ("lets start!")
     return
 
 def polzun_up():
-    po(em2, 1)
-	 po(em5, 1)
+    pinOut(em2, 1)
+	 pinOut(em5, 1)
     return
 
 def polzun_slow_down():
-    po(em1, 1)
+    pinOut(em1, 1)
 	 return
 
 def polzun_fast_down():
-	 po(em1, 1)
-    po(em5, 1)
-	 po(em8, 1)
+	 pinOut(em1, 1)
+    pinOut(em5, 1)
+	 pinOut(em8, 1)
 	 return
 
 def tolkatel_up():
-	 po(em4, 1)
+	 pinOut(em4, 1)
 	 return
 
 def tolkatel_down():
-	 po(em3, 1)
+	 pinOut(em3, 1)
 
 def gidra_stop():
-	 po(em1, 0)
-    po(em2, 0)
-	 po(em3, 0)
-	 po(em4, 0)
-	 po(em5, 0)
-	 po(em8, 0)
+	 pinOut(em1, 0)
+    pinOut(em2, 0)
+	 pinOut(em3, 0)
+	 pinOut(em4, 0)
+	 pinOut(em5, 0)
+	 pinOut(em8, 0)
     return
 
 def zasipka_out():
-	 po(z_out, 1)
+	 pinOut(z_out, 1)
 	 return
 	
 def zasipka_in():
-	 po(z_in, 1)
+	 pinOut(z_in, 1)
 	 return
 
 def pnevmo_stop():
-	 po(z_in, 0)
-	 po(z_out, 0)
+	 pinOut(z_in, 0)
+	 pinOut(z_out, 0)
 	 return
 
 def halt():
-	gidra_stop()
-	pnevmo_stop()
+	 gidra_stop()
+	 pnevmo_stop()
 
 def initial():
-    while pi(pol_up) == True:
+    while pinIn(polUp) == True:
 		 polzun_up()
 	 else:
 		 gidra_stop()
-	 if pi(pol_up) == False:
-		 while pi(zas_in) == True:
+	 if pinIn(pol_up) == False:
+		 while pinIn(zasIn) == True:
            zasipka_in()
 	    else:
 		     pnevmo_stop() 
 	 else:
 	     halt()
-    if pi(zas_in) == False:
-	     while pi(tol_up) == True:
+    if pinIn(zasIn) == False:
+	     while pinIn(tolUp) == True:
 		      tolkatel_up
 	     else:
 		      gidra_stop()
-        while pi(pol_slow) == True:
+        while pinIn(polSlow) == True:
 			   polzun_slow_down())
 		  else:
 			   gidra_stop()
-		  while pi(pol_up) == True:
+		  while pinIn(polUp) == True:
 			   polzun_up()
 		  else:
 			   gidra_stop()
