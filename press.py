@@ -2,6 +2,11 @@
 #coding=utf8
 import time
 import RPi.GPIO as GPIO
+from EmulatorGUI import GPIO
+
+
+zasipka_pause = 0.7
+
 
 #Настраиваем Входы-Выходы
 GPIO.setmode(GPIO.BCM)
@@ -53,6 +58,7 @@ polSlow = 9
 polDn = 8
 tolUp = 15
 tolDn = 3
+tolFill = 10
 zasOut = 6
 zasIn = 7
 startBtn = 14
@@ -66,26 +72,26 @@ def initial_signal():
         time.sleep(0.5)
     time.sleep(5)
     print("lets start!")
-    return
+    return 0
 
 def polzun_up():
     pinOut(em2, 1)
     pinOut(em5, 1)
-    return
+    return 0
 
 def polzun_slow_down():
     pinOut(em1, 1)
-    return
+    return 0
 
 def polzun_fast_down():
     pinOut(em1, 1)
     pinOut(em5, 1)
     pinOut(em8, 1)
-    return
+    return 0
 
 def tolkatel_up():
     pinOut(em4, 1)
-    return
+    return 0
 
 def tolkatel_down():
     pinOut(em3, 1)
@@ -97,50 +103,151 @@ def gidra_stop():
     pinOut(em4, 0)
     pinOut(em5, 0)
     pinOut(em8, 0)
-    return
+    return 0
 
 def zasipka_out():
     pinOut(z_out, 1)
-    return
+    return 0
 
 def zasipka_in():
     pinOut(z_in, 1)
-    return
+    return 0
 
 def pnevmo_stop():
     pinOut(z_in, 0)
     pinOut(z_out, 0)
-    return
+    return 0
 
 def halt():
     gidra_stop()
     pnevmo_stop()
+    for i in range (1, 2):
+        pinOut(buzz, 1)
+        time.sleep(0.3)
+        pinOut(buzz, 0)
+        time.sleep(0.3)
+    time.sleep(1)
+    for i in range (1, 2):
+        pinOut(buzz, 1)
+        time.sleep(0.3)
+        pinOut(buzz, 0)
+        time.sleep(0.3)
+    return 0
+
+
+def tolkatel_fill():
+    while pinIn(tolDn) == True:
+        tolkatel_down()
+    else: 
+        gidra_stop()
+    while pinIn(tolFill) == True:
+        tolkatel_up()
+    else:
+        gidra_stop()
+    return 0
+
+def fill():
+    while pinIn(zasOut) == True:
+        zasipka_out()
+    else:
+        pnevmo_stop()
+        time.sleep(zasipka_pause)
+    for i in range(1, 3):
+            zasipka_in()
+            time.sleep(zasipka_pause)
+            pnevmo_stop()
+            zasipka_out()
+            time.sleep(zasipka_pause) 
+            pnevmo_stop()   
+    while pinIn(zasIn) == True:
+        zasipka_in()
+    else:
+        pnevmo_stop()
+    return 0
+
+def suspend():
+    while pinIn(startBtn) == True:
+        pinOut(lamp, 1)
+        time.sleep(0.5)
+        pinOut(lamp, 0)
+        time.sleep(0.5)
+    else:
+        return 0
 
 def initial():
-    while pinIn(polUp) == True:
+    while pinIn(polUp) == True: #While the main cylinder upper sensor is not covered move up
         polzun_up()
     else:
         gidra_stop()
-    if pinIn(pol_up) == False:
+    if pinIn(polUp) == False: #If we are sure that main cylinder us up close the tray
         while pinIn(zasIn) == True:
             zasipka_in()
         else:
             pnevmo_stop() 
     else:
-        halt()
-    if pinIn(zasIn) == False:
+        return 1                                                               
+    if pinIn(zasIn) == False:#If we are sure that the tray is closed move the pusher
         while pinIn(tolUp) == True:
             tolkatel_up
         else:
             gidra_stop()
+        while pinIn(polSlow) == True:#While the main cylinder middle proximity senser is uncovered move the down
+            polzun_slow_down()
+        else:
+            gidra_stop()
+        while pinIn(polUp) == True:#After triggering the middle sensor move up to the first upper sensor
+            polzun_up()
+        else:
+            gidra_stop()
+    return 0
+
+def main_cycle():
+    if pinIn(tolUp) == False and pinIn(polUp) == False and pinIn(zasIn) == False:
+        tolkatel_fill()
+        if pinIn(tolUp) == False:
+            fill()
+        else:
+            return 1
+        while pinIn(tolDn) == True:
+            tolkatel_down()
+        else:
+            gidra_stop()
         while pinIn(polSlow) == True:
-            polzun_slow_down())
+            polzun_fast_down()
+        else:
+            gidra_stop()
+        while pinIn(polDn) == True:
+            polzun_slow_down()
         else:
             gidra_stop()
         while pinIn(polUp) == True:
             polzun_up()
         else:
             gidra_stop()
-    return
+        while pinIn(tolUp) == True:
+            tolkatel_up()
+        else:
+            gidra_stop()
+    else:
+        return 1
+    return 0
+    
+def main():
+    count = 0
+    while True:
+        if count == 0:
+            initialResult = initial()
+            if initialResult == 1:
+                count = 0
+                continue
+        else:
+            suspend()
+            if pinIn(polUp) == False and pinIn(tolUp) == False:
+                result = main_cycle()
+                if result == 0:
+                    count += 1
+                else:
+                    count = 0
 
-
+if __name__ == "__main__":
+    main()
